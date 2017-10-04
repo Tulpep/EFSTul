@@ -23,7 +23,7 @@ VOID ShowError(DWORD errId)
 int wmain(int argc, WCHAR * argv[])
 {
 	DWORD dirExists;
-	BOOL encryptDir, efsDir; ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+	BOOL encryptDir, efsDir;
 
 	dirExists = GetFileAttributesW(PATH);
 
