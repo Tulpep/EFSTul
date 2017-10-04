@@ -29,7 +29,6 @@ int wmain(int argc, WCHAR * argv[])
 
 	if (dirExists == INVALID_FILE_ATTRIBUTES)
 	{
-		wprintf(L"Here!");
 		ShowError(GetLastError());	
 
 		efsDir = CreateDirectoryW(PATH, NULL);
@@ -37,6 +36,19 @@ int wmain(int argc, WCHAR * argv[])
 		if (efsDir)
 		{
 			wprintf(L"\nDirectory has been created.\n");
+
+			//Let's encrypt!
+			encryptDir = EncryptFileW(PATH);
+
+			if (!encryptDir)
+			{
+				wprintf(L"\nCould not encrypt folder, code: ");
+				ShowError(GetLastError());
+			}
+			else
+			{
+				wprintf(L"\nDirectory has been encrypted using EFS.\n");
+			}
 
 		}
 		else
@@ -56,7 +68,9 @@ int wmain(int argc, WCHAR * argv[])
 
 		if (!encryptDir)
 		{
+			wprintf(L"\nCould not encrypt folder, code: ");
 			ShowError(GetLastError());
+
 		}
 		else
 		{
@@ -64,8 +78,6 @@ int wmain(int argc, WCHAR * argv[])
 		}
 		
 	}
-
-	getchar();
 
 	return 0;
 }
