@@ -1,5 +1,10 @@
 #include <Windows.h>
 #include <tchar.h>
+#include <Lmcons.h>
+#include <PathCch.h>
+
+
+#pragma comment(lib, "Pathcch.lib")
 
 #define PATH L"D:\\EFS"
 
@@ -25,9 +30,19 @@ int wmain(int argc, WCHAR * argv[])
 	DWORD dirExists;
 	BOOL encryptDir, efsDir;
 
+	//GetUserName()
+	WCHAR bufferName[UNLEN + 1];
+	DWORD sizeOfBuff = lstrlenW(bufferName);
+
+	//PathCchCombine
+	HRESULT pathResult;
+	WCHAR pathOut[MAX_PATH];
+	SIZE_T sizePathOut = MAX_PATH;
+
+
 	dirExists = GetFileAttributesW(PATH);
 
-	if (dirExists == INVALID_FILE_ATTRIBUTES)
+	if (dirExists == INVALID_FILE_ATTRIBUTES)	//Directory does not exist
 	{
 		ShowError(GetLastError());	
 
@@ -35,23 +50,54 @@ int wmain(int argc, WCHAR * argv[])
 
 		if (efsDir)
 		{
-			wprintf(L"\nDirectory has been created.\n");
 
-			//Let's encrypt!
-			encryptDir = EncryptFileW(PATH);
+			wprintf(L"\nEFS directory has been created.\n");
 
-			if (!encryptDir)
+			//Getting user name 
+			if (GetUserNameW(bufferName, &sizeOfBuff))
 			{
-				wprintf(L"\nCould not encrypt folder, code: ");
+				//Combine D:\EFS with the username: D:\EFS\%UserName%
+				pathResult = PathCchCombine(pathOut, sizePathOut, PATH, bufferName);
+
+				if (pathResult == S_OK)
+				{
+					if (!CreateDirectoryW(pathOut, NULL))
+					{
+						ShowError(GetLastError());
+						exit(GetLastError());
+					}
+
+					//Let's encrypt!
+					encryptDir = EncryptFileW(pathOut);
+
+					if (!encryptDir)
+					{
+						wprintf(L"\nCould not encrypt folder, code: ");
+						ShowError(GetLastError());
+					}
+					else
+					{
+						wprintf(L"\nDirectory has been encrypted using EFS.\n");
+					}
+
+				}
+				else //If path cannot be combined
+				{
+					wprintf(L"Path could not be combined, error: ");
+					ShowError(GetLastError());
+
+				}
+
+			}
+			else //If GetUserNameW() fails
+			{
+				wprintf(L"User name could not be retrieved, error: ");
 				ShowError(GetLastError());
-			}
-			else
-			{
-				wprintf(L"\nDirectory has been encrypted using EFS.\n");
-			}
+
+			}			
 
 		}
-		else
+		else //If CreateDirectoryW() fails
 		{
 			wprintf(L"\nDirectory could not be created, code: ");
 			ShowError(GetLastError());
@@ -63,18 +109,47 @@ int wmain(int argc, WCHAR * argv[])
 	{
 		wprintf(L"\nDirectory exists.");
 
-		//Let's encrypt!
-		encryptDir = EncryptFileW(PATH);
-
-		if (!encryptDir)
+		//Getting user name 
+		if (GetUserNameW(bufferName, &sizeOfBuff))
 		{
-			wprintf(L"\nCould not encrypt folder, code: ");
-			ShowError(GetLastError());
+			//Combine D:\EFS with the username: D:\EFS\%UserName%
+			pathResult = PathCchCombine(pathOut, sizePathOut, PATH, bufferName);
+
+			if (pathResult == S_OK)
+			{
+				if (!CreateDirectoryW(pathOut, NULL))
+				{
+					ShowError(GetLastError());
+					exit(GetLastError());
+				}
+
+				//Let's encrypt!
+				encryptDir = EncryptFileW(pathOut);
+
+				if (!encryptDir) //If encryption fails
+				{
+					wprintf(L"\nCould not encrypt folder, code: ");
+					ShowError(GetLastError());
+				}
+				else
+				{
+					wprintf(L"\nDirectory has been encrypted using EFS.\n");
+				}
+
+			}
+			else //If path cannot be combined
+			{
+				wprintf(L"Path could not be combined, error: ");
+				ShowError(GetLastError());
+
+			}
 
 		}
-		else
+		else //If GetUserNameW() fails
 		{
-			wprintf(L"\nDirectory has been encrypted using EFS.\n");
+			wprintf(L"User name could not be retrieved, error: ");
+			ShowError(GetLastError());
+
 		}
 		
 	}
