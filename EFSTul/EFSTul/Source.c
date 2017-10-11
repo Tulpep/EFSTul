@@ -10,11 +10,13 @@
 #define PATH_TO_D L"D:\\EFS"
 #define PATH_TO_E L"E:\\EFS"
 
+/* This function uses FormatMessageW() function to get 
+the error message from the Windows Error Handler */
 VOID ShowError(DWORD errId)
 {
 	DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-				FORMAT_MESSAGE_FROM_SYSTEM |
-				FORMAT_MESSAGE_IGNORE_INSERTS;
+				  FORMAT_MESSAGE_FROM_SYSTEM     |
+				  FORMAT_MESSAGE_IGNORE_INSERTS;
 	DWORD langId = LANG_USER_DEFAULT;
 	LPWSTR errMsg;
 
@@ -27,9 +29,9 @@ VOID ShowError(DWORD errId)
 	LocalFree(errMsg);
 }
 
-int wmain(int argc, WCHAR * argv[])
+VOID CreateEFSFolder(LPWSTR folderPath)
 {
-	DWORD dirDExists, dirEExists;
+	DWORD dirExists;
 	BOOL encryptDir, efsDir;
 
 	//GetUserName()
@@ -39,24 +41,17 @@ int wmain(int argc, WCHAR * argv[])
 	//PathCchCombine
 	HRESULT pathResult;
 	WCHAR pathOut[MAX_PATH];
-	SIZE_T sizePathOut = MAX_PATH;	
+	SIZE_T sizePathOut = MAX_PATH;
 
-	if (IsWindowsServer())	//We don't support this tool on Windows Server
-	{
-		fwprintf(stderr, L"\nThis tool is not supported on Windows Server versions.\n");
-		exit(GetLastError());
-	}
+	dirExists = GetFileAttributesW(folderPath);
 
-	dirDExists = GetFileAttributesW(PATH_TO_D);
-	dirEExists = GetFileAttributesW(PATH_TO_E);
-	
 
-	if (dirDExists == INVALID_FILE_ATTRIBUTES)	//Directory does not exist
+	if (dirExists == INVALID_FILE_ATTRIBUTES)	//Directory does not exist
 	{
 
-		ShowError(GetLastError());	
+		ShowError(GetLastError());
 
-		efsDir = CreateDirectoryW(PATH_TO_D, NULL);
+		efsDir = CreateDirectoryW(folderPath, NULL);
 
 		if (efsDir)
 		{
@@ -67,7 +62,7 @@ int wmain(int argc, WCHAR * argv[])
 			if (GetUserNameW(bufferName, &sizeOfBuff))
 			{
 				//Combine D:\EFS with the username: D:\EFS\%UserName%
-				pathResult = PathCchCombine(pathOut, sizePathOut, PATH_TO_D, bufferName);
+				pathResult = PathCchCombine(pathOut, sizePathOut, folderPath, bufferName);
 
 				if (pathResult == S_OK)
 				{
@@ -104,7 +99,7 @@ int wmain(int argc, WCHAR * argv[])
 				wprintf(L"User name could not be retrieved, error: ");
 				ShowError(GetLastError());
 
-			}			
+			}
 
 		}
 		else //If CreateDirectoryW() fails
@@ -115,7 +110,7 @@ int wmain(int argc, WCHAR * argv[])
 
 	}
 	//Checking againts the FILE_ATTRIBUTE_DIRECTORY bit 
-	else if((dirDExists & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
+	else if ((dirExists & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
 	{
 		wprintf(L"\nDirectory exists.");
 
@@ -123,7 +118,7 @@ int wmain(int argc, WCHAR * argv[])
 		if (GetUserNameW(bufferName, &sizeOfBuff))
 		{
 			//Combine D:\EFS with the username: D:\EFS\%UserName%
-			pathResult = PathCchCombine(pathOut, sizePathOut, PATH_TO_D, bufferName);
+			pathResult = PathCchCombine(pathOut, sizePathOut, folderPath, bufferName);
 
 			if (pathResult == S_OK)
 			{
@@ -161,8 +156,48 @@ int wmain(int argc, WCHAR * argv[])
 			ShowError(GetLastError());
 
 		}
-		
+
 	}
+
+
+}
+
+int wmain(int argc, WCHAR * argv[])
+{	
+	//GetLogicalDrives()
+	DWORD getDrives;	
+
+
+	//Checks if the app is running on Windows Server
+	if (IsWindowsServer())	
+	{
+		fwprintf(stderr, L"\nThis tool is not supported on Windows Server versions.\n");
+		exit(GetLastError());
+	}
+
+	getDrives = GetLogicalDrives();
+
+	if (getDrives == 0) {
+
+		wprintf(L"Could not get logical drives, error: ");
+		ShowError(GetLastError());
+	}
+	else
+	{
+		if ((getDrives & 8))	//8==D:
+		{
+			CreateEFSFolder(PATH_TO_D);
+
+		}
+		else if ((getDrives & 10))	//10==E
+		{
+			CreateEFSFolder(PATH_TO_E);
+
+		}
+		else
+			fwprintf(stderr, L"\nThere are not logical drives available to create the EFS folder.\n");
+
+	}	
 
 	return 0;
 }
