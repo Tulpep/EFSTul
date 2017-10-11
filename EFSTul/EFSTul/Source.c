@@ -109,8 +109,9 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 		}
 
 	}
+
 	//Checking againts the FILE_ATTRIBUTE_DIRECTORY bit 
-	else if ((dirExists & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
+	else if ((dirExists & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)	//Directory does exist
 	{
 		wprintf(L"\nDirectory exists.");
 
