@@ -2,11 +2,13 @@
 #include <tchar.h>
 #include <Lmcons.h>
 #include <PathCch.h>
+#include <VersionHelpers.h>
 
 
 #pragma comment(lib, "Pathcch.lib")
 
-#define PATH L"D:\\EFS"
+#define PATH_TO_D L"D:\\EFS"
+#define PATH_TO_E L"E:\\EFS"
 
 VOID ShowError(DWORD errId)
 {
@@ -27,7 +29,7 @@ VOID ShowError(DWORD errId)
 
 int wmain(int argc, WCHAR * argv[])
 {
-	DWORD dirExists;
+	DWORD dirDExists, dirEExists;
 	BOOL encryptDir, efsDir;
 
 	//GetUserName()
@@ -37,16 +39,24 @@ int wmain(int argc, WCHAR * argv[])
 	//PathCchCombine
 	HRESULT pathResult;
 	WCHAR pathOut[MAX_PATH];
-	SIZE_T sizePathOut = MAX_PATH;
+	SIZE_T sizePathOut = MAX_PATH;	
 
-
-	dirExists = GetFileAttributesW(PATH);
-
-	if (dirExists == INVALID_FILE_ATTRIBUTES)	//Directory does not exist
+	if (IsWindowsServer())	//We don't support this tool on Windows Server
 	{
+		fwprintf(stderr, L"\nThis tool is not supported on Windows Server versions.\n");
+		exit(GetLastError());
+	}
+
+	dirDExists = GetFileAttributesW(PATH_TO_D);
+	dirEExists = GetFileAttributesW(PATH_TO_E);
+	
+
+	if (dirDExists == INVALID_FILE_ATTRIBUTES)	//Directory does not exist
+	{
+
 		ShowError(GetLastError());	
 
-		efsDir = CreateDirectoryW(PATH, NULL);
+		efsDir = CreateDirectoryW(PATH_TO_D, NULL);
 
 		if (efsDir)
 		{
@@ -57,7 +67,7 @@ int wmain(int argc, WCHAR * argv[])
 			if (GetUserNameW(bufferName, &sizeOfBuff))
 			{
 				//Combine D:\EFS with the username: D:\EFS\%UserName%
-				pathResult = PathCchCombine(pathOut, sizePathOut, PATH, bufferName);
+				pathResult = PathCchCombine(pathOut, sizePathOut, PATH_TO_D, bufferName);
 
 				if (pathResult == S_OK)
 				{
@@ -105,7 +115,7 @@ int wmain(int argc, WCHAR * argv[])
 
 	}
 	//Checking againts the FILE_ATTRIBUTE_DIRECTORY bit 
-	else if((dirExists & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
+	else if((dirDExists & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
 	{
 		wprintf(L"\nDirectory exists.");
 
@@ -113,7 +123,7 @@ int wmain(int argc, WCHAR * argv[])
 		if (GetUserNameW(bufferName, &sizeOfBuff))
 		{
 			//Combine D:\EFS with the username: D:\EFS\%UserName%
-			pathResult = PathCchCombine(pathOut, sizePathOut, PATH, bufferName);
+			pathResult = PathCchCombine(pathOut, sizePathOut, PATH_TO_D, bufferName);
 
 			if (pathResult == S_OK)
 			{
