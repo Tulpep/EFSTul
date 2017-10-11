@@ -25,7 +25,7 @@ VOID ShowError(DWORD errId)
 		wprintf(L"Error getting the message. Code: %lu\n", GetLastError());
 	}
 
-	wprintf(L"\n%s", errMsg);
+	wprintf(L"%s", errMsg);
 	LocalFree(errMsg);
 }
 
@@ -82,7 +82,8 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 					}
 					else
 					{
-						wprintf(L"\nDirectory has been encrypted using EFS.\n");
+						wprintf(L"\nDirectory has been encrypted using EFS: ");
+						ShowError(GetLastError());
 					}
 
 				}
@@ -113,7 +114,7 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 	//Checking againts the FILE_ATTRIBUTE_DIRECTORY bit 
 	else if ((dirExists & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)	//Directory does exist
 	{
-		wprintf(L"\nDirectory exists.");
+		wprintf(L"\n%s directory already exists.\n", folderPath);
 
 		//Getting user name 
 		if (GetUserNameW(bufferName, &sizeOfBuff))
@@ -125,6 +126,7 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 			{
 				if (!CreateDirectoryW(pathOut, NULL))
 				{
+					wprintf(L"\nCould not create user profile directory, error: ");
 					ShowError(GetLastError());
 					exit(GetLastError());
 				}
@@ -139,7 +141,8 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 				}
 				else
 				{
-					wprintf(L"\nDirectory has been encrypted using EFS.\n");
+					wprintf(L"\nDirectory has been encrypted using EFS: ");
+					ShowError(GetLastError());
 				}
 
 			}
@@ -187,11 +190,13 @@ int wmain(int argc, WCHAR * argv[])
 	{
 		if ((getDrives & 8))	//8==D:
 		{
+			wprintf(L"\nSelected partition: \"D:\"\n");
 			CreateEFSFolder(PATH_TO_D);
 
 		}
-		else if ((getDrives & 10))	//10==E
+		else if ((getDrives & 12))	//10==E
 		{
+			wprintf(L"\nSelected partition: \"E:\"\n");
 			CreateEFSFolder(PATH_TO_E);
 
 		}
