@@ -1,11 +1,11 @@
 #include <Windows.h>
 #include <tchar.h>
 #include <Lmcons.h>
-#include <PathCch.h>
+#include <Shlwapi.h>
 #include <VersionHelpers.h>
 
+#pragma comment(lib, "Shlwapi.lib")
 
-#pragma comment(lib, "Pathcch.lib")
 
 #define PATH_TO_D L"D:\\EFS"
 #define PATH_TO_E L"E:\\EFS"
@@ -17,7 +17,7 @@ VOID ShowError(DWORD errId)
 	DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | 
 				  FORMAT_MESSAGE_FROM_SYSTEM     |
 				  FORMAT_MESSAGE_IGNORE_INSERTS;
-	DWORD langId = LANG_USER_DEFAULT;
+	DWORD langId = LANG_SYSTEM_DEFAULT;
 	LPWSTR errMsg;
 
 	if (!FormatMessageW(flags, NULL, errId, langId, (LPWSTR)&errMsg, 0, NULL))
@@ -36,12 +36,12 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 
 	//GetUserName()
 	WCHAR bufferName[UNLEN + 1];
-	DWORD sizeOfBuff = lstrlenW(bufferName);
+	DWORD sizeOfBuff = UNLEN + 1;
 
 	//PathCchCombine
-	HRESULT pathResult;
+	LPWSTR pathResult;
 	WCHAR pathOut[MAX_PATH];
-	SIZE_T sizePathOut = MAX_PATH;
+	
 
 	dirExists = GetFileAttributesW(folderPath);
 
@@ -62,9 +62,10 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 			if (GetUserNameW(bufferName, &sizeOfBuff))
 			{
 				//Combine D:\EFS with the username: D:\EFS\%UserName%
-				pathResult = PathCchCombine(pathOut, sizePathOut, folderPath, bufferName);
+				pathResult = PathCombineW(pathOut, folderPath, bufferName);
 
-				if (pathResult == S_OK)
+
+				if (pathResult != NULL)
 				{
 					if (!CreateDirectoryW(pathOut, NULL))
 					{
@@ -99,6 +100,7 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 			{
 				wprintf(L"User name could not be retrieved, error: ");
 				ShowError(GetLastError());
+				wprintf(L"Code: %lu\n", GetLastError());
 
 			}
 
@@ -120,9 +122,9 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 		if (GetUserNameW(bufferName, &sizeOfBuff))
 		{
 			//Combine D:\EFS with the username: D:\EFS\%UserName%
-			pathResult = PathCchCombine(pathOut, sizePathOut, folderPath, bufferName);
+			pathResult = PathCombineW(pathOut, folderPath, bufferName);
 
-			if (pathResult == S_OK)
+			if (pathResult != NULL)
 			{
 				if (!CreateDirectoryW(pathOut, NULL))
 				{
@@ -158,6 +160,7 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 		{
 			wprintf(L"User name could not be retrieved, error: ");
 			ShowError(GetLastError());
+			wprintf(L"Code: %lu\n", GetLastError());
 
 		}
 
@@ -194,7 +197,7 @@ int wmain(int argc, WCHAR * argv[])
 			CreateEFSFolder(PATH_TO_D);
 
 		}
-		else if ((getDrives & 12))	//10==E
+		else if ((getDrives & 12))	//12==E
 		{
 			wprintf(L"\nSelected partition: \"E:\"\n");
 			CreateEFSFolder(PATH_TO_E);
