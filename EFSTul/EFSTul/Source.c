@@ -17,12 +17,13 @@ VOID ShowError(DWORD errId)
 	DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | 
 				  FORMAT_MESSAGE_FROM_SYSTEM     |
 				  FORMAT_MESSAGE_IGNORE_INSERTS;
-	DWORD langId = LANG_SYSTEM_DEFAULT;
+	
+	DWORD langId = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
 	LPWSTR errMsg;
 
-	if (!FormatMessageW(flags, NULL, errId, langId, (LPWSTR)&errMsg, 0, NULL))
+	if (!FormatMessageW(flags, NULL, errId, 0, (LPWSTR)&errMsg, 0, NULL))
 	{
-		wprintf(L"Error getting the message. Code: %lu\n", GetLastError());
+		wprintf(L"\nCould not get error message, code: %lu\n", GetLastError());
 	}
 
 	wprintf(L"%s", errMsg);
@@ -41,6 +42,8 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 	//PathCchCombine
 	LPWSTR pathResult;
 	WCHAR pathOut[MAX_PATH];
+
+	
 	
 
 	dirExists = GetFileAttributesW(folderPath);
@@ -90,7 +93,7 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 				}
 				else //If path cannot be combined
 				{
-					wprintf(L"Path could not be combined, error: ");
+					wprintf(L"\nPath could not be combined, error: ");
 					ShowError(GetLastError());
 
 				}
@@ -98,7 +101,7 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 			}
 			else //If GetUserNameW() fails
 			{
-				wprintf(L"User name could not be retrieved, error: ");
+				wprintf(L"\nUser name could not be retrieved, error: ");
 				ShowError(GetLastError());
 				wprintf(L"Code: %lu\n", GetLastError());
 
@@ -150,7 +153,7 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 			}
 			else //If path cannot be combined
 			{
-				wprintf(L"Path could not be combined, error: ");
+				wprintf(L"\nPath could not be combined, error: ");
 				ShowError(GetLastError());
 
 			}
@@ -158,9 +161,9 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 		}
 		else //If GetUserNameW() fails
 		{
-			wprintf(L"User name could not be retrieved, error: ");
+			wprintf(L"\nUser name could not be retrieved, error: ");
 			ShowError(GetLastError());
-			wprintf(L"Code: %lu\n", GetLastError());
+			
 
 		}
 
@@ -172,8 +175,7 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 int wmain(int argc, WCHAR * argv[])
 {	
 	//GetLogicalDrives()
-	DWORD getDrives;	
-
+	DWORD getDrives;
 
 	//Checks if the app is running on Windows Server
 	if (IsWindowsServer())	
@@ -182,22 +184,25 @@ int wmain(int argc, WCHAR * argv[])
 		exit(GetLastError());
 	}
 
+	//This function gets all the available logical drives
 	getDrives = GetLogicalDrives();
+	
 
-	if (getDrives == 0) {
+	if (getDrives == 0) //If function fails
+	{
 
-		wprintf(L"Could not get logical drives, error: ");
+		wprintf(L"\nCould not get logical drives, error: ");
 		ShowError(GetLastError());
 	}
 	else
 	{
-		if ((getDrives & 8))	//8==D:
+		if ((getDrives & 8) && GetDriveTypeW(L"D:\\")==DRIVE_FIXED)	//8==D:
 		{
-			wprintf(L"\nSelected partition: \"D:\"\n");
+			wprintf(L"\nSelected partition: \"D:\"\n");			
 			CreateEFSFolder(PATH_TO_D);
 
 		}
-		else if ((getDrives & 12))	//12==E
+		else if ((getDrives & 12) && GetDriveTypeW(L"E:\\")==DRIVE_FIXED)	//12==E
 		{
 			wprintf(L"\nSelected partition: \"E:\"\n");
 			CreateEFSFolder(PATH_TO_E);
