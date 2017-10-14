@@ -1,3 +1,4 @@
+#include <locale.h>
 #include <Windows.h>
 #include <tchar.h>
 #include <Lmcons.h>
@@ -10,10 +11,14 @@
 #define PATH_TO_D L"D:\\EFS"
 #define PATH_TO_E L"E:\\EFS"
 
+
+
 /* This function uses FormatMessageW() function to get 
 the error message from the Windows Error Handler */
 VOID ShowError(DWORD errId)
 {
+
+	
 	DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | 
 				  FORMAT_MESSAGE_FROM_SYSTEM     |
 				  FORMAT_MESSAGE_IGNORE_INSERTS;
@@ -173,7 +178,9 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 }
 
 int wmain(int argc, WCHAR * argv[])
-{	
+{
+	_wsetlocale(LC_ALL, L"English");
+
 	//GetLogicalDrives()
 	DWORD getDrives;
 
