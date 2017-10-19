@@ -4,6 +4,7 @@
 #include <Lmcons.h>
 #include <Shlwapi.h>
 #include <VersionHelpers.h>
+#include <wchar.h>
 
 #pragma comment(lib, "Shlwapi.lib")
 
@@ -207,12 +208,14 @@ int wmain(int argc, WCHAR * argv[])
 		{
 			wprintf(L"\nSelected partition: \"D:\"\n");			
 			CreateEFSFolder(PATH_TO_D);
+			_wsystem(L"icacls \"D:\\EFS\\%UserName%\" /inheritance:r /remove \"Usuarios Autentificados\" /remove \"Usuarios\" /grant %UserName%:(OI)(CI)F /grant SYSTEM:(OI)(CI)F /grant Administradores:(OI)(CI)F");
 
 		}
 		else if ((getDrives & 12) && GetDriveTypeW(L"E:\\")==DRIVE_FIXED)	//12==E
 		{
 			wprintf(L"\nSelected partition: \"E:\"\n");
 			CreateEFSFolder(PATH_TO_E);
+			_wsystem(L"icacls \"E:\\EFS\\%UserName%\" /inheritance:r /remove \"Usuarios autentificados\" /remove \"Usuarios\" /grant %UserName%:(OI)(CI)F /grant SYSTEM:(OI)(CI)F /grant ADMINISTRADORES:(OI)(CI)F");
 
 		}
 		else
