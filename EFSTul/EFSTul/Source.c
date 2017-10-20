@@ -1,17 +1,21 @@
-#include <locale.h>
+#define SECURITY_WIN32
 #include <Windows.h>
+#include <security.h>
+#include <locale.h>
 #include <tchar.h>
 #include <Lmcons.h>
 #include <Shlwapi.h>
 #include <VersionHelpers.h>
 #include <wchar.h>
 
+
+
 #pragma comment(lib, "Shlwapi.lib")
+#pragma comment(lib, "Secur32.lib")
 
 
-#define PATH_TO_D L"D:\\EFS"
-#define PATH_TO_E L"E:\\EFS"
-
+#define PATH_TO_D L"D:\\InfoSegura"
+#define PATH_TO_E L"E:\\InfoSegura"
 
 
 /* This function uses FormatMessageW() function to get 
@@ -36,6 +40,8 @@ VOID ShowError(DWORD errId)
 	LocalFree(errMsg);
 }
 
+
+
 VOID CreateEFSFolder(LPWSTR folderPath)
 {
 	DWORD dirExists;
@@ -44,14 +50,14 @@ VOID CreateEFSFolder(LPWSTR folderPath)
 	//GetUserName()
 	WCHAR bufferName[UNLEN + 1];
 	DWORD sizeOfBuff = UNLEN + 1;
+	
 
 	//PathCchCombine
 	LPWSTR pathResult;
 	WCHAR pathOut[MAX_PATH];
-
 	
 	
-
+	//Checks if directory exists
 	dirExists = GetFileAttributesW(folderPath);
 
 
@@ -182,6 +188,14 @@ int wmain(int argc, WCHAR * argv[])
 {
 	_wsetlocale(LC_ALL, L"English");
 
+	//GetUserNameEx()
+	EXTENDED_NAME_FORMAT nameFormat = NameUserPrincipal;
+	WCHAR nameExtended[256 + 1];
+	ULONG sizeExtended = 256 + 1;
+
+	//SetEnvironmentVariable
+	LPWSTR envarName = L"UserPrincipal";
+
 	//GetLogicalDrives()
 	DWORD getDrives;
 
@@ -189,8 +203,9 @@ int wmain(int argc, WCHAR * argv[])
 	if (IsWindowsServer())	
 	{
 		fwprintf(stderr, L"\nThis tool is not supported on Windows Server versions.\n");
-		exit(GetLastError());
+		exit(1);
 	}
+	
 
 	//This function gets all the available logical drives
 	getDrives = GetLogicalDrives();
@@ -206,20 +221,60 @@ int wmain(int argc, WCHAR * argv[])
 	{
 		if ((getDrives & 8) && GetDriveTypeW(L"D:\\")==DRIVE_FIXED)	//8==D:
 		{
-			wprintf(L"\nSelected partition: \"D:\"\n");			
-			CreateEFSFolder(PATH_TO_D);
-			_wsystem(L"icacls \"D:\\EFS\\%UserName%\" /inheritance:r /remove \"Usuarios Autentificados\" /remove \"Usuarios\" /grant %UserName%:(OI)(CI)F /grant SYSTEM:(OI)(CI)F /grant Administradores:(OI)(CI)F");
+			wprintf(L"\nSelected partition: \"D:\"\n");
+
+			CreateEFSFolder(PATH_TO_D);	//D:\InfoSegura
+
+			if (GetUserNameExW(nameFormat, nameExtended, &sizeExtended))
+			{
+				//Creates the %UserPrincipal% environment variable, which will be use for icacls
+				if (!SetEnvironmentVariableW(envarName, nameExtended))
+				{
+					wprintf(L"\nCould no create the environment variable, error: ");
+					ShowError(GetLastError());
+					return FALSE;
+				}
+
+				//Sets ACL to D:\InfoSegura\%UserName%
+				_wsystem(L"\nicacls \"D:\\InfoSegura\\%UserName%\" /inheritance:r /remove \"Usuarios autentificados\" /remove \"Usuarios\" /grant %UserPrincipal%:(OI)(CI)F /grant SYSTEM:(OI)(CI)F /grant ADMINISTRADORES:(OI)(CI)F");
+
+			}
+			else
+			{
+				wprintf(L"\nCould not get the user principal name, error: ");
+				ShowError(GetLastError());
+			}			
 
 		}
 		else if ((getDrives & 12) && GetDriveTypeW(L"E:\\")==DRIVE_FIXED)	//12==E
 		{
 			wprintf(L"\nSelected partition: \"E:\"\n");
-			CreateEFSFolder(PATH_TO_E);
-			_wsystem(L"icacls \"E:\\EFS\\%UserName%\" /inheritance:r /remove \"Usuarios autentificados\" /remove \"Usuarios\" /grant %UserName%:(OI)(CI)F /grant SYSTEM:(OI)(CI)F /grant ADMINISTRADORES:(OI)(CI)F");
+
+			CreateEFSFolder(PATH_TO_E);	//E:\InfoSegura
+
+			if (GetUserNameExW(nameFormat, nameExtended, &sizeExtended))
+			{
+				//Creates the %UserPrincipal% environment variable, which will be use for icacls
+				if (!SetEnvironmentVariableW(envarName, nameExtended))
+				{
+					wprintf(L"\nCould no create the environment variable, error: ");
+					ShowError(GetLastError());
+					return FALSE;
+				}
+
+				//Sets ACL to E:\InfoSegura\%Username%
+				_wsystem(L"\nicacls \"E:\\InfoSegura\\%UserName%\" /inheritance:r /remove \"Usuarios autentificados\" /remove \"Usuarios\" /grant %UserPrincipal%:(OI)(CI)F /grant SYSTEM:(OI)(CI)F /grant ADMINISTRADORES:(OI)(CI)F");
+
+			}
+			else
+			{
+				wprintf(L"\nCould not get the user principal name, error: ");
+				ShowError(GetLastError());
+			}			
 
 		}
 		else
-			fwprintf(stderr, L"\nThere are not logical drives available to create the EFS folder.\n");
+			fwprintf(stderr, L"\nThere are not logical drives available to create the InfoSegura folder.\n");
 
 	}	
 
