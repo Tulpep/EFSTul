@@ -7,11 +7,12 @@
 #include <Shlwapi.h>
 #include <VersionHelpers.h>
 #include <wchar.h>
-
+#include <LM.h>
 
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "Secur32.lib")
+#pragma comment(lib, "Netapi32.lib")
 
 
 #define PATH_TO_D L"D:\\InfoSegura"
@@ -39,8 +40,6 @@ VOID ShowError(DWORD errId)
 	wprintf(L"%s", errMsg);
 	LocalFree(errMsg);
 }
-
-
 
 VOID CreateEFSFolder(LPWSTR folderPath)
 {
@@ -199,12 +198,34 @@ int wmain(int argc, WCHAR * argv[])
 	//GetLogicalDrives()
 	DWORD getDrives;
 
+	//NetGetJoinInformation()
+	NET_API_STATUS joinInfo;
+	LPWSTR netBIOSName;
+	NETSETUP_JOIN_STATUS joinStatus;
+
+	//Gets information about join status
+	joinInfo = NetGetJoinInformation(NULL, &netBIOSName, &joinStatus);
+
+	if (joinInfo != NERR_Success)
+	{
+		wprintf(L"\nCould not get join status, error: ");
+		ShowError(GetLastError());
+		exit(1);
+	}
+	else if(joinStatus!=NetSetupDomainName)	//If is not joined to a domain
+	{
+		wprintf(L"\nThis tool does not work on non-domain joined computers.\n");
+		exit(1);
+	}
+
+
 	//Checks if the app is running on Windows Server
 	if (IsWindowsServer())	
 	{
 		fwprintf(stderr, L"\nThis tool is not supported on Windows Server versions.\n");
 		exit(1);
 	}
+
 	
 
 	//This function gets all the available logical drives
@@ -235,8 +256,14 @@ int wmain(int argc, WCHAR * argv[])
 					return FALSE;
 				}
 
+				
+				//S-1-5-11=Authenticated Users
+				//S-1-5-32-545=Users
+				//S-1-5-18=SYSTEM
+				//S-1-5-32-544=Administrators
+
 				//Sets ACL to D:\InfoSegura\%UserName%
-				_wsystem(L"\nicacls \"D:\\InfoSegura\\%UserName%\" /inheritance:r /remove \"Usuarios autentificados\" /remove \"Usuarios\" /grant %UserPrincipal%:(OI)(CI)F /grant SYSTEM:(OI)(CI)F /grant ADMINISTRADORES:(OI)(CI)F");
+				_wsystem(L"\nicacls \"D:\\InfoSegura\\%UserName%\" /inheritance:r /remove \"*S-1-5-11\" /remove \"*S-1-5-32-545\" /grant %UserPrincipal%:(OI)(CI)F /grant *S-1-5-18:(OI)(CI)F /grant *S-1-5-32-544:(OI)(CI)F");
 
 			}
 			else
@@ -263,7 +290,12 @@ int wmain(int argc, WCHAR * argv[])
 				}
 
 				//Sets ACL to E:\InfoSegura\%Username%
-				_wsystem(L"\nicacls \"E:\\InfoSegura\\%UserName%\" /inheritance:r /remove \"Usuarios autentificados\" /remove \"Usuarios\" /grant %UserPrincipal%:(OI)(CI)F /grant SYSTEM:(OI)(CI)F /grant ADMINISTRADORES:(OI)(CI)F");
+				//S-1-5-11=Authenticated Users
+				//S-1-5-32-545=Users
+				//S-1-5-18=SYSTEM
+				//S-1-5-32-544=Administrators
+
+				_wsystem(L"\nicacls \"E:\\InfoSegura\\%UserName%\" /inheritance:r /remove \"*S-1-5-11\" /remove \"*S-1-5-32-545\" /grant %UserPrincipal%:(OI)(CI)F /grant *S-1-5-18:(OI)(CI)F /grant *S-1-5-32-544:(OI)(CI)F");
 
 			}
 			else
